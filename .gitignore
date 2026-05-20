@@ -1,0 +1,88 @@
+pyproject.toml
+uv.lock
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Packaging and build outputs
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+
+# Python installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.env/
+.python-version
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Test, coverage, and type-checking caches
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.pytest_cache/
+.hypothesis/
+.mypy_cache/
+.pyre/
+.pytype/
+coverage.xml
+*.cover
+*.py,cover
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Private local resources
+resources_private/
+
+# Python tooling caches
+.ruff_cache/
+.cache/
+dmypy.json
+.dmypy.json
+
+# PyCharm and JetBrains IDE files
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# macOS files commonly created in Python projects on macOS
+.DS_Store
+/paper_reproduction_baseline.ipynb
+/capstone_proposal.html
+/capstone_proposal.md
+/data/
