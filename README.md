@@ -98,18 +98,27 @@ The most defensible model depends on the goal:
 - If the goal is balancing readmission detection with fewer false alerts, gradient boosted trees are the better compromise.
 - If the goal is broad screening and follow-up resources are plentiful, expanded logistic regression may be acceptable, but it creates many false alerts.
 
-HbA1c groups have similar readmission rates in this dataset, which helps explain why HbA1c categories do not add much predictive value.
+The notebook uses SHAP to inspect models where the explanation stays tied to the model-facing feature matrix: the logistic-regression models, gradient boosted trees, random forest, and linear SVM. The approximate RBF-kernel SVM and neural-network models are not included in the SHAP section because their explanations would either refer to transformed components or require slow model-agnostic approximations. SHAP views are limited to the 10 most important features.
+
+<img src="images/shap_random_forest_top10_bar.png" alt="Random forest SHAP feature importance" width="650">
+
+The SHAP results suggest that the models are mostly learning broader hospital-utilization and clinical-complexity patterns. Prior inpatient history is one of the strongest signals: patients with no prior inpatient visits generally appear lower risk, while prior inpatient use is more concerning. Age also matters, especially the older age group. In the expanded models, length of stay becomes important, which may reflect illness severity, care complexity, or discharge-planning needs.
+
+Diagnosis category also contributes to the predictions. Circulatory and respiratory diagnosis groups appear repeatedly among important features, suggesting that a deeper diagnosis analysis could be useful. The current project uses broad primary-diagnosis groups, so some clinically meaningful detail may be lost. HbA1c-related variables, by contrast, are not consistently among the strongest model drivers.
+
+HbA1c groups also have similar readmission rates in this dataset, which helps explain why HbA1c categories do not add much predictive value.
 
 <img src="images/a1c_readmission_rate.png" alt="A1C readmission" width="650">
 
 #### Next steps
 
-Recommended next steps are:
+Possible next steps are:
 
 - Review the findings with clinicians, nurses, discharge planners, or hospital operations staff to decide what kind of readmission-risk alert would actually be useful and when it would need to be available.
 - Improve the diagnosis analysis. This project used broad groups based mainly on the primary diagnosis. A next version should examine secondary diagnoses, the number of diagnoses, and more detailed diagnosis combinations with medical input.
-- Revisit features that were simplified or excluded in this version. Some of these fields have missing data or may only be available later in the hospital stay, so their use should match the intended decision point.
-- Add information that is not available in this dataset but may be important for readmission risk.
+- Revisit features that were simplified or excluded in this version, especially prior utilization details, medical specialty, payer information, lab and procedure counts, medication classes, and discharge disposition. Some of these fields have missing data or may only be available later in the hospital stay, so their use should match the intended decision point.
+- Add information that is not available in this dataset but may be important for readmission risk, such as outpatient follow-up availability, medication adherence, social support, insurance constraints, and access to primary care.
+- Use the SHAP findings to guide feature design before trying more models. The next improvement should focus on clinically meaningful variables, not only on model tuning.
 - Evaluate model results with the people who would act on them. The key question is not only whether the model score is higher, but whether the alerts would help staff make better decisions without creating too many unnecessary follow-ups.
 
 None of the current models is ready for clinical or operational deployment without clinical review, stronger feature validation, external testing, and fairness checks across patient groups.
@@ -122,4 +131,3 @@ None of the current models is ready for clinical or operational deployment witho
 - [HbA1c readmission rate figure](images/a1c_readmission_rate.png)
 - [Model average precision figure](images/model_average_precision.png)
 - [True-positive and false-positive tradeoff figure](images/tp_fp_tradeoff.png)
-
