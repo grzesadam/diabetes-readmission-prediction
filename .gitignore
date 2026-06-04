@@ -86,3 +86,14 @@ dmypy.json
 /capstone_proposal.html
 /capstone_proposal.md
 /data/
+
+/~$pstone Project_Final Report Template.docx
+/~$pstone Project_Final Report.docx
+/Capstone Project_Final Report Template.docx
+/Capstone Project_Final Report.docx
+/capstone_proposal.html
+/tests/
+/images/final_model_comparison.csv
+/src/__init__.py
+/local_figure_code/
+!/.gitignore

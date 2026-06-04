@@ -1,93 +1,125 @@
-# Predicting 30-Day Hospital Readmission for Patients With Diabetes
+### Predicting 30-Day Hospital Readmission for Patients With Diabetes
 
-## Author: Grzegorz Adamiec
+**Grzegorz Adamiec**
 
-**Executive Summary**
+#### Executive summary
 
-This project examines whether machine learning models can predict 30-day hospital readmission among patients with diabetes. The analysis uses the UCI **Diabetes 130-US Hospitals dataset** and draws on the _Strack et al._ study as a methodological reference, while focusing strictly on prediction rather than causal inference.
+This capstone project asks whether machine learning can help identify patients with diabetes who are likely to return to the hospital within 30 days of discharge. The project also tests whether HbA1c measurement and other discharge-time information improve prediction compared with a simpler model that uses information available closer to admission.
 
-The initial baseline model used one encounter per patient, converted the original three-level readmitted outcome into a binary 30-day readmission target, and applied logistic regression with a restricted set of admission-related features. After tuning, the model achieved a test ROC-AUC of approximately 0.59, indicating limited but better-than-random ranking performance.
+The main finding is that the models perform only slightly better than chance. The best models can rank higher-risk patients somewhat better than a random guess, but their precision is low. In practical terms, the strongest models still create about 8 to 9 false alerts for every true readmission they flag.
 
-An expanded version of the model incorporated HbA1c (`A1Cresult`; glycated hemoglobin) and serum glucose (`max_glu_serum`) categories. Predictive performance changed very little: the expanded model achieved a ROC-AUC of approximately 0.586, which was effectively the same as the baseline. Overall, the results suggest that the current logistic regression setup and selected variables do not strongly distinguish patients who will be readmitted within 30 days from those who will not.
+HbA1c measurement and the tested discharge-time features do not significantly improve prediction. The expanded logistic regression model catches 100 additional true readmissions compared with the baseline logistic regression model, but it also creates 961 additional false positives on the test set.
 
-**Rationale**
+The project is useful as a technical exploration, but the current models should not be used for clinical or operational decisions without major additional validation, calibration, and fairness review.
 
-Hospital readmission is an important clinical and operational measure because early readmissions may reflect disease severity, gaps in care, or insufficient follow-up support. In patients with diabetes, predicting readmission is particularly relevant because effective disease management often depends on coordination between inpatient treatment and outpatient care.
+The main analysis is in the [Jupyter notebook](diabetes.ipynb). Supporting model-evaluation code is in [src/model_evaluation.py](src/model_evaluation.py).
 
-A reliable prediction model could help identify patients who may benefit from additional discharge planning or closer follow-up after hospitalization. However, this project does not interpret the observed relationships as causal. All findings are treated as predictive associations only.
+#### Rationale
 
-**Research Question**
+Hospital readmission is costly for hospitals and disruptive for patients. For people with diabetes, early readmission may reflect disease severity, gaps in discharge planning, limited outpatient follow-up, or other health and social factors that are not fully captured in hospital records.
+
+If a model could reliably identify higher-risk patients, hospitals might use that information to prioritize follow-up calls, discharge planning, medication review, or outpatient support. However, the model must be evaluated carefully. A model that flags too many people incorrectly can waste limited clinical resources, while a model that misses too many readmissions may not be useful.
+
+#### Research Question
 
 Can machine learning models predict whether a patient with diabetes will be readmitted to the hospital within 30 days?
 
-A secondary question is whether HbA1c and glucose-related variables improve predictive performance compared with a more restricted baseline model.
+A secondary question is whether HbA1c measurement and other discharge-time information improve prediction compared with a baseline model that uses information available closer to admission.
 
-**Data Source**
+This is a supervised binary classification problem. The outcome is:
 
-The dataset is the UCI **Diabetes 130-US Hospitals for Years 1999-2008** dataset, associated with:
+- `1`: readmitted within 30 days
+- `0`: not readmitted within 30 days
 
-Strack, Beata, DeShazo, Jonathan P., Gennings, Chris, Olmo, Juan L., Ventura, Sebastian, Cios, Krzysztof J., and Clore, John N. "Impact of HbA1c Measurement on Hospital Readmission Rates: Analysis of 70,000 Clinical Database Patient Records." BioMed Research International, 2014. https://doi.org/10.1155/2014/781670
+This project is predictive, not causal. If a model performs better after adding HbA1c or discharge-time variables, that does not prove those variables cause readmission risk to change.
 
-The dataset is de-identified. Use it only for educational analysis and do not make patient-care recommendations from this project.
+#### Data Sources
 
-The raw dataset contains 101,766 hospital encounters. To reduce duplication at the patient level and align more closely with the published study, the analysis retained only the first encounter for each patient, leaving 71,518 records before later exclusions and feature-level cleaning. For the expanded analysis, discharge categories related to death or hospice care were removed (similarly to the paper), resulting in 69,973 records before feature-level preprocessing.
+The analysis uses the UCI **Diabetes 130-US Hospitals for Years 1999-2008** dataset, associated with:
 
-The dataset is cached locally in the data/ folder upon first download so that future notebook runs do not require downloading the raw files again.
+Strack, B., DeShazo, J. P., Gennings, C., Olmo, J. L., Ventura, S., Cios, K. J., and Clore, J. N. (2014). *Impact of HbA1c Measurement on Hospital Readmission Rates: Analysis of 70,000 Clinical Database Patient Records.* BioMed Research International, 2014, 781670. https://doi.org/10.1155/2014/781670
 
-**Methodology**
+The raw dataset contains 101,766 hospital encounters. The analysis keeps the first encounter for each patient, resulting in 71,518 patient-level records before model-specific cleaning. The initial model-ready cohort contains 71,504 records. The discharge-time model-ready cohort contains 69,960 records after removing death and hospice-related discharge dispositions.
 
-The target variable was derived from the original `readmitted` field:
+| Dataset quantity | Value |
+|---|---:|
+| Raw encounters | 101,766 |
+| First encounter per patient | 71,518 |
+| Initial model-ready records | 71,504 |
+| Discharge-time model-ready records | 69,960 |
+| Initial positive rate | 8.8% |
+| Discharge-time test positive rate | 9.0% |
 
-* 1: readmitted within 30 days (<30)
-* 0: not readmitted within 30 days (>30 or NO)
 
-The initial feature set was limited to variables available at or near the time of admission:
+<img src="images/target_distribution.png" alt="Target distribution" width="650">
 
-* age group
-* race group
-* gender
-* admission type
-* admission source group
-* primary diagnosis group
-* prior outpatient, emergency, and inpatient utilization
+The dataset is de-identified and is used only for educational analysis. It should not be used to make patient-care recommendations from this project.
 
-Several variables were excluded from the baseline because of missingness, high cardinality (to avoid an excessive number of features), or potential data leakage. For example, `weight`, `payer_code`, and `medical_specialty` were excluded because of incomplete data or modelling complexity. Variables that would only be known during or after the hospital stay - including discharge disposition, length of stay, laboratory counts, medication changes, HbA1c results, and glucose measurements - were omitted from the strict admission-time baseline.
+#### Methodology
 
-Feature engineering steps included (following the approach used in the paper):
+The notebook cleans and prepares the data by keeping one encounter per patient, removing invalid or incomplete records needed for modeling, grouping diagnosis codes into broader categories, grouping prior hospital utilization counts, and one-hot encoding categorical variables.
 
-* combining age bands into broader age groups,
-* grouping race categories,
-* grouping admission sources into emergency, physician referral, and other,
-* mapping raw ICD-9 primary diagnosis codes into broader clinical categories,
-* converting prior utilization counts into categorical ranges (0, 1–2, >2) after an initial trial using numeric counts,
-* adding categorical HbA1c and serum glucose variables in the expanded model.
+The baseline model uses information available near admission, including age group, race group, gender, admission type, admission source, primary diagnosis group, and prior outpatient, emergency, and inpatient utilization.
 
-The baseline modeling workflow used logistic regression with balanced class weights. Because the 30-day readmission target is highly imbalanced, accuracy alone was not treated as an appropriate evaluation metric. Model performance was evaluated using confusion matrices, precision, recall, F1-score, ROC-AUC, average precision, and threshold analysis. 
+The expanded discharge-time model adds information available during or by the end of the hospital encounter:
 
-**Results**
+- length of stay
+- HbA1c test result
+- maximum glucose serum result
+- whether diabetes medication changed during the encounter
 
-After preprocessing for the initial model, the stratified train/test split contained:
+The train/test split is stratified so that the rare 30-day readmission outcome appears at a similar rate in training and test data. The notebook compares several supervised classification models, including logistic regression, polynomial logistic regression, gradient boosted trees, random forest, support vector machines, and neural network models.
 
-* training set: 57,203 records,
-* test set: 14,301 records,
-* positive class rate: approximately 8.8%.
+`GridSearchCV` is used for hyperparameter tuning. Average precision is used as the main tuning metric because the readmission outcome is highly imbalanced and accuracy would be misleading.
 
-The tuned logistic regression baseline achieved:
+#### Results
 
-* test ROC-AUC: approximately 0.592,
-* test average precision: approximately 0.130,
-* readmission-class recall at threshold 0.50: approximately 0.55,
-* readmission-class precision at threshold 0.50: approximately 0.11.
+The models predict slightly better than chance, but the overall signal is weak. Only about 8.8% of model-ready records are positive 30-day readmissions, so a useful model needs to do more than achieve high accuracy by predicting that most patients will not be readmitted.
 
-The model was able to identify some patients who were readmitted within 30 days, but it also generated a large number of false positives. This outcome is expected when balanced class weights are applied to a strongly imbalanced target variable. The results provide a reasonable baseline for comparison, although the model is not accurate enough for practical deployment in its current form.
+The best model by ranking metrics is the random forest, with ROC-AUC of 0.596 and average precision of 0.132. Gradient boosted trees are close behind, with ROC-AUC of 0.594 and average precision of 0.131. Since the positive-class rate is about 9%, these average precision values are only modestly better than the baseline rate.
 
-The expanded model added HbA1c and glucose-related categories after excluding discharge dispositions associated with death or hospice care. Its ROC-AUC was approximately 0.586, which was effectively unchanged from the baseline model. Within this logistic regression framework, the additional laboratory-result categories did not meaningfully improve predictive performance.
+<img src="images/model_average_precision.png" alt="Model average precision" width="650">
 
-**Next Steps**
+| Model | TP | FP | Precision | Recall | Balanced accuracy | ROC-AUC | Avg. precision |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Random forest | 681 | 5,194 | 0.116 | 0.543 | 0.567 | 0.596 | 0.132 |
+| Gradient boosted trees | 572 | 4,038 | 0.124 | 0.456 | 0.569 | 0.594 | 0.131 |
+| Expanded discharge-time logistic regression | 697 | 5,389 | 0.115 | 0.555 | 0.566 | 0.590 | 0.129 |
+| Paper-style baseline logistic regression | 597 | 4,428 | 0.119 | 0.476 | 0.564 | 0.586 | 0.128 |
+| Neural network MLP | 394 | 3,071 | 0.114 | 0.314 | 0.536 | 0.559 | 0.110 |
 
-The next stage of the project should evaluate models capable of capturing non-linear relationships and feature interactions. Candidate approaches include tree-based methods such as random forest, gradient boosting, XGBoost, and LightGBM. Neural network models could also be explored, although tree-based methods are likely to be a more suitable next step for this type of tabular dataset. 
+The practical tradeoff is the most important result. Models that catch more true readmissions also create many false positives.
 
-Additional discharge-time features can also be tested later, including discharge disposition, length of stay, laboratory counts, and medication changes.
+<img src="images/tp_fp_tradeoff.png" alt="True positives and false positives" width="650">
 
-**Repository Contents**
-* [Initial EDA and baseline modeling notebook](diabetes.ipynb)
+The most defensible model depends on the goal:
+
+- If the goal is ranking patients by risk, random forest is strongest by ROC-AUC and average precision.
+- If the goal is balancing readmission detection with fewer false alerts, gradient boosted trees are the better compromise.
+- If the goal is broad screening and follow-up resources are plentiful, expanded logistic regression may be acceptable, but it creates many false alerts.
+
+HbA1c groups have similar readmission rates in this dataset, which helps explain why HbA1c categories do not add much predictive value.
+
+<img src="images/a1c_readmission_rate.png" alt="A1C readmission" width="650">
+
+#### Next steps
+
+Recommended next steps are:
+
+- Review the findings with clinicians, nurses, discharge planners, or hospital operations staff to decide what kind of readmission-risk alert would actually be useful and when it would need to be available.
+- Improve the diagnosis analysis. This project used broad groups based mainly on the primary diagnosis. A next version should examine secondary diagnoses, the number of diagnoses, and more detailed diagnosis combinations with medical input.
+- Revisit features that were simplified or excluded in this version. Some of these fields have missing data or may only be available later in the hospital stay, so their use should match the intended decision point.
+- Add information that is not available in this dataset but may be important for readmission risk.
+- Evaluate model results with the people who would act on them. The key question is not only whether the model score is higher, but whether the alerts would help staff make better decisions without creating too many unnecessary follow-ups.
+
+None of the current models is ready for clinical or operational deployment without clinical review, stronger feature validation, external testing, and fairness checks across patient groups.
+
+#### Outline of project
+
+- [Main analysis notebook](diabetes.ipynb)
+- [Model evaluation helper module](src/model_evaluation.py)
+- [Target distribution figure](images/target_distribution.png)
+- [HbA1c readmission rate figure](images/a1c_readmission_rate.png)
+- [Model average precision figure](images/model_average_precision.png)
+- [True-positive and false-positive tradeoff figure](images/tp_fp_tradeoff.png)
+
