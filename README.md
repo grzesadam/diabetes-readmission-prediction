@@ -6,9 +6,9 @@
 
 This capstone project asks whether machine learning can help identify patients with diabetes who are likely to return to the hospital within 30 days of discharge. The project also tests whether HbA1c measurement and other discharge-time information improve prediction compared with a simpler model that uses information available closer to admission.
 
-The main finding is that the models perform only slightly better than chance. The best models can rank higher-risk patients somewhat better than a random guess, but their precision is low. In practical terms, the strongest models still create about 8 to 9 false alerts for every true readmission they flag.
+The main finding is that the models perform only slightly better than chance. The best models can rank higher-risk patients somewhat better than a random guess, but their precision is low. In practical terms, the strongest models still create about 7 to 8 false alerts for every true readmission they flag.
 
-HbA1c measurement and the tested discharge-time features do not significantly improve prediction. The expanded logistic regression model catches 100 additional true readmissions compared with the baseline logistic regression model, but it also creates 961 additional false positives on the test set.
+HbA1c measurement and the tested discharge-time features do not significantly improve prediction. The expanded logistic regression model has slightly higher ranking and balanced-accuracy metrics than the baseline logistic regression model, but the practical gain is small.
 
 The project is useful as a technical exploration, but the current models should not be used for clinical or operational decisions without major additional validation, calibration, and fairness review.
 
@@ -70,23 +70,23 @@ The expanded discharge-time model adds information available during or by the en
 
 The train/test split is stratified so that the rare 30-day readmission outcome appears at a similar rate in training and test data. The notebook compares several supervised classification models, including logistic regression, polynomial logistic regression, gradient boosted trees, random forest, support vector machines, and neural network models.
 
-`GridSearchCV` is used for hyperparameter tuning. Average precision is used as the main tuning metric because the readmission outcome is highly imbalanced and accuracy would be misleading.
+`GridSearchCV` is used for hyperparameter tuning with stratified cross-validation. Average precision is used as the main tuning metric because the readmission outcome is highly imbalanced and accuracy would be misleading.
 
 #### Results
 
 The models predict slightly better than chance, but the overall signal is weak. Only about 8.8% of model-ready records are positive 30-day readmissions, so a useful model needs to do more than achieve high accuracy by predicting that most patients will not be readmitted.
 
-The best model by ranking metrics is the random forest, with ROC-AUC of 0.596 and average precision of 0.132. Gradient boosted trees are close behind, with ROC-AUC of 0.594 and average precision of 0.131. Since the positive-class rate is about 9%, these average precision values are only modestly better than the baseline rate.
+The best model by ranking metrics is the random forest, with ROC-AUC of 0.593 and average precision of 0.133. Gradient boosted trees are close behind, with ROC-AUC of 0.592 and average precision of 0.132. Since the positive-class rate is about 9%, these average precision values are only modestly better than the baseline rate.
 
 <img src="images/model_average_precision.png" alt="Model average precision" width="650">
 
 | Model | TP | FP | Precision | Recall | Balanced accuracy | ROC-AUC | Avg. precision |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| Random forest | 681 | 5,194 | 0.116 | 0.543 | 0.567 | 0.596 | 0.132 |
-| Gradient boosted trees | 572 | 4,038 | 0.124 | 0.456 | 0.569 | 0.594 | 0.131 |
+| Random forest | 501 | 3,471 | 0.126 | 0.399 | 0.563 | 0.593 | 0.133 |
+| Gradient boosted trees | 699 | 5,431 | 0.114 | 0.557 | 0.565 | 0.592 | 0.132 |
 | Expanded discharge-time logistic regression | 697 | 5,389 | 0.115 | 0.555 | 0.566 | 0.590 | 0.129 |
-| Paper-style baseline logistic regression | 597 | 4,428 | 0.119 | 0.476 | 0.564 | 0.586 | 0.128 |
-| Neural network MLP | 394 | 3,071 | 0.114 | 0.314 | 0.536 | 0.559 | 0.110 |
+| Paper-style baseline logistic regression | 721 | 5,997 | 0.107 | 0.575 | 0.552 | 0.586 | 0.128 |
+| Neural network MLP | 517 | 3,696 | 0.123 | 0.412 | 0.561 | 0.587 | 0.128 |
 
 The practical tradeoff is the most important result. Models that catch more true readmissions also create many false positives.
 
@@ -95,8 +95,8 @@ The practical tradeoff is the most important result. Models that catch more true
 The most defensible model depends on the goal:
 
 - If the goal is ranking patients by risk, random forest is strongest by ROC-AUC and average precision.
-- If the goal is balancing readmission detection with fewer false alerts, gradient boosted trees are the better compromise.
-- If the goal is broad screening and follow-up resources are plentiful, expanded logistic regression may be acceptable, but it creates many false alerts.
+- If the goal is balancing readmission detection with fewer false alerts, random forest and the SVM models are more conservative tradeoffs.
+- If the goal is broad screening and follow-up resources are plentiful, gradient boosted trees or expanded logistic regression may be acceptable, but they create many false alerts.
 
 The notebook uses SHAP to inspect models where the explanation stays tied to the model-facing feature matrix: the logistic-regression models, gradient boosted trees, random forest, and linear SVM. The approximate RBF-kernel SVM and neural-network models are not included in the SHAP section because their explanations would either refer to transformed components or require slow model-agnostic approximations. SHAP views are limited to the 10 most important features.
 

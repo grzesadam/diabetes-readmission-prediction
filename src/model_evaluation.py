@@ -16,7 +16,7 @@ from sklearn.metrics import (
     roc_auc_score,
     roc_curve,
 )
-from sklearn.model_selection import GridSearchCV, train_test_split
+from sklearn.model_selection import GridSearchCV, StratifiedKFold, train_test_split
 from sklearn.pipeline import Pipeline
 
 
@@ -238,7 +238,9 @@ def evaluate_model(
     scoring : str, callable, or scorer, optional
         Scoring strategy for ``GridSearchCV``. Defaults to average precision.
     cv : int or cross-validation splitter, default=5
-        Cross-validation strategy passed to ``GridSearchCV``.
+        Cross-validation strategy passed to ``GridSearchCV``. Integer values
+        are converted to ``StratifiedKFold`` with shuffling so each fold keeps
+        a similar readmission positive rate.
     n_jobs : int, default=-1
         Number of parallel jobs used by ``GridSearchCV``.
     threshold : float, "best_f1", or "best_balanced_accuracy", default=0.50
@@ -308,12 +310,18 @@ def evaluate_model(
         )
         threshold_selection_source = "validation"
 
+    grid_cv = (
+        StratifiedKFold(n_splits=cv, shuffle=True, random_state=threshold_random_state)
+        if isinstance(cv, int)
+        else cv
+    )
+
     if param_grid is not None:
         fitted_model = GridSearchCV(
             pipeline,
             param_grid=param_grid,
             scoring=scoring,
-            cv=cv,
+            cv=grid_cv,
             n_jobs=n_jobs,
             refit=True,
         )
